@@ -1,47 +1,26 @@
-/*
-  This example requires some changes to your config:
-  
-  ```
-  // tailwind.config.js
-  module.exports = {
-    // ...
-    plugins: [
-      // ...
-      require('@tailwindcss/forms'),
-    ],
-  }
-  ```
-*/
-import {
-  Menu,
-  MenuButton,
-  MenuItem,
-  MenuItems,
-  Popover,
-  PopoverBackdrop,
-  PopoverButton,
-  PopoverPanel,
-} from '@headlessui/react'
-import { Bars3Icon, BellIcon, XMarkIcon } from '@heroicons/react/24/outline'
-import { MagnifyingGlassIcon } from '@heroicons/react/20/solid'
+'use client'
 
-const user = {
-  name: 'Tom Cook',
-  email: 'tom@example.com',
-  imageUrl:
-    'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-}
+import { useState } from 'react'
+import { Dialog, DialogBackdrop, DialogPanel, TransitionChild } from '@headlessui/react'
+import {
+  Bars3Icon,
+  CalendarIcon,
+  ChartPieIcon,
+  DocumentDuplicateIcon,
+  FolderIcon,
+  HomeIcon,
+  UsersIcon,
+  XMarkIcon,
+} from '@heroicons/react/24/outline'
+import { useRouter } from 'next/navigation'
+
 const navigation = [
-  { name: 'Home', href: '#', current: true },
-  { name: 'Profile', href: '#', current: false },
-  { name: 'Resources', href: '#', current: false },
-  { name: 'Company Directory', href: '#', current: false },
-  { name: 'Openings', href: '#', current: false },
-]
-const userNavigation = [
-  { name: 'Your Profile', href: '#' },
-  { name: 'Settings', href: '#' },
-  { name: 'Sign out', href: '#' },
+  { name: 'Dashboard', href: '#', icon: HomeIcon, current: true },
+  { name: 'Team', href: '#', icon: UsersIcon, current: false },
+  { name: 'Projects', href: '#', icon: FolderIcon, current: false },
+  { name: 'Calendar', href: '#', icon: CalendarIcon, current: false },
+  { name: 'Documents', href: '#', icon: DocumentDuplicateIcon, current: false },
+  { name: 'Reports', href: '#', icon: ChartPieIcon, current: false },
 ]
 
 function classNames(...classes) {
@@ -49,273 +28,148 @@ function classNames(...classes) {
 }
 
 export default function Example() {
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const router = useRouter()
+
+  const handleLogout = () => {
+    // Add your logout logic here (clear tokens, sessions, etc.)
+    console.log('Logging out...')
+    
+    // After logout logic, redirect to /auth
+    router.push('/auth/login')
+  }
+
   return (
     <>
-      {/*
-        This example requires updating your template:
+      <div>
+        <Dialog open={sidebarOpen} onClose={setSidebarOpen} className="relative z-50 lg:hidden">
+          <DialogBackdrop
+            transition
+            className="fixed inset-0 bg-gray-900/80 transition-opacity duration-300 ease-linear data-[closed]:opacity-0"
+          />
 
-        ```
-        <html class="h-full bg-gray-100">
-        <body class="h-full">
-        ```
-      */}
-      <div className="min-h-full">
-      <Popover as="header" style={{ backgroundColor: '#04584F' }} className="pb-24">
+          <div className="fixed inset-0 flex">
+            <DialogPanel
+              transition
+              className="relative mr-16 flex w-full max-w-xs flex-1 transform transition duration-300 ease-in-out data-[closed]:-translate-x-full"
+            >
+              <TransitionChild>
+                <div className="absolute left-full top-0 flex w-16 justify-center pt-5 duration-300 ease-in-out data-[closed]:opacity-0">
+                  <button type="button" onClick={() => setSidebarOpen(false)} className="-m-2.5 p-2.5">
+                    <span className="sr-only">Close sidebar</span>
+                    <XMarkIcon aria-hidden="true" className="h-6 w-6 text-white" />
+                  </button>
+                </div>
+              </TransitionChild>
 
-          <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:max-w-7xl lg:px-8">
-            <div className="relative flex items-center justify-center py-5 lg:justify-between">
-              {/* Logo */}
-              <div className="absolute left-0 flex-shrink-0 lg:static">
-                <a href="#">
-                  <span className="sr-only">Your Company</span>
-                  
-                </a>
-              </div>
-
-              {/* Right section on desktop */}
-              <div className="hidden lg:ml-4 lg:flex lg:items-center lg:pr-0.5">
-                <button
-                  type="button"
-                  className="relative flex-shrink-0 rounded-full p-1 text-indigo-200 hover:bg-white hover:bg-opacity-10 hover:text-white focus:outline-none focus:ring-2 focus:ring-white"
-                >
-                  <span className="absolute -inset-1.5" />
-                  <span className="sr-only">View notifications</span>
-                  <BellIcon aria-hidden="true" className="h-6 w-6" />
-                </button>
-
-                {/* Profile dropdown */}
-                <Menu as="div" className="relative ml-4 flex-shrink-0">
-                  <div>
-                    <MenuButton className="relative flex rounded-full bg-white text-sm ring-2 ring-white ring-opacity-20 focus:outline-none focus:ring-opacity-100">
-                      <span className="absolute -inset-1.5" />
-                      <span className="sr-only">Open user menu</span>
-                      <img alt="" src={user.imageUrl} className="h-8 w-8 rounded-full" />
-                    </MenuButton>
-                  </div>
-                  <MenuItems
-                    transition
-                    className="absolute -right-2 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none data-[closed]:data-[leave]:scale-95 data-[closed]:data-[leave]:transform data-[closed]:data-[leave]:opacity-0 data-[leave]:transition data-[leave]:duration-75 data-[leave]:ease-in"
-                  >
-                    {userNavigation.map((item) => (
-                      <MenuItem key={item.name}>
-                        <a href={item.href} className="block px-4 py-2 text-sm text-gray-700 data-[focus]:bg-gray-100">
+              <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-gray-900 px-6 pb-2 ring-1 ring-white/10">
+                <div className="flex h-16 shrink-0 items-center">
+                  <img
+                    alt="Your Company"
+                    src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=500"
+                    className="h-8 w-auto"
+                  />
+                </div>
+                <nav className="flex flex-1 flex-col">
+                  <ul role="list" className="-mx-2 flex-1 space-y-1">
+                    {navigation.map((item) => (
+                      <li key={item.name}>
+                        <a
+                          href={item.href}
+                          className={classNames(
+                            item.current
+                              ? 'bg-gray-800 text-white'
+                              : 'text-gray-400 hover:bg-gray-800 hover:text-white',
+                            'group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6',
+                          )}
+                        >
+                          <item.icon aria-hidden="true" className="h-6 w-6 shrink-0" />
                           {item.name}
                         </a>
-                      </MenuItem>
+                      </li>
                     ))}
-                  </MenuItems>
-                </Menu>
+                  </ul>
+                </nav>
               </div>
-
-              {/* Search */}
-              <div className="min-w-0 flex-1 px-12 lg:hidden">
-                <div className="mx-auto w-full max-w-xs">
-                  <label htmlFor="desktop-search" className="sr-only">
-                    Search
-                  </label>
-                  <div className="relative text-white focus-within:text-gray-600">
-                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                      <MagnifyingGlassIcon aria-hidden="true" className="h-5 w-5" />
-                    </div>
-                    <input
-                      id="desktop-search"
-                      name="search"
-                      type="search"
-                      placeholder="Search"
-                      className="block w-full rounded-md border-0 bg-white/20 py-1.5 pl-10 pr-3 text-white placeholder:text-white focus:bg-white focus:text-gray-900 focus:ring-0 focus:placeholder:text-gray-500 sm:text-sm sm:leading-6"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Menu button */}
-              <div className="absolute right-0 flex-shrink-0 lg:hidden">
-                {/* Mobile menu button */}
-                <PopoverButton className="group relative inline-flex items-center justify-center rounded-md bg-transparent p-2 text-indigo-200 hover:bg-white hover:bg-opacity-10 hover:text-white focus:outline-none focus:ring-2 focus:ring-white">
-                  <span className="absolute -inset-0.5" />
-                  <span className="sr-only">Open main menu</span>
-                  <Bars3Icon aria-hidden="true" className="block h-6 w-6 group-data-[open]:hidden" />
-                  <XMarkIcon aria-hidden="true" className="hidden h-6 w-6 group-data-[open]:block" />
-                </PopoverButton>
-              </div>
-            </div>
-            <div className="hidden border-t border-white border-opacity-20 py-5 lg:block">
-              <div className="grid grid-cols-3 items-center gap-8">
-                <div className="col-span-2">
-                  <nav className="flex space-x-4">
-                    {navigation.map((item) => (
-                      <a
-                        key={item.name}
-                        href={item.href}
-                        aria-current={item.current ? 'page' : undefined}
-                        className={classNames(
-                          item.current ? 'text-white' : 'text-indigo-100',
-                          'rounded-md bg-white bg-opacity-0 px-3 py-2 text-sm font-medium hover:bg-opacity-10',
-                        )}
-                      >
-                        {item.name}
-                      </a>
-                    ))}
-                  </nav>
-                </div>
-                <div>
-                  <div className="mx-auto w-full max-w-md">
-                    <label htmlFor="mobile-search" className="sr-only">
-                      Search
-                    </label>
-                    <div className="relative text-white focus-within:text-gray-600">
-                      <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                        <MagnifyingGlassIcon aria-hidden="true" className="h-5 w-5" />
-                      </div>
-                      <input
-                        id="mobile-search"
-                        name="search"
-                        type="search"
-                        placeholder="Search"
-                        className="block w-full rounded-md border-0 bg-white/20 py-1.5 pl-10 pr-3 text-white placeholder:text-white focus:bg-white focus:text-gray-900 focus:ring-0 focus:placeholder:text-gray-500 sm:text-sm sm:leading-6"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            </DialogPanel>
           </div>
+        </Dialog>
 
-          <div className="lg:hidden">
-            <PopoverBackdrop
-              transition
-              className="fixed inset-0 z-20 bg-black bg-opacity-25 duration-150 data-[closed]:opacity-0 data-[enter]:ease-out data-[leave]:ease-in"
+        {/* Static sidebar for desktop */}
+        <div className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 lg:block lg:w-20 lg:overflow-y-auto lg:bg-gray-900 lg:pb-4">
+          <div className="flex h-16 shrink-0 items-center justify-center">
+            <img
+              alt="Your Company"
+              src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=500"
+              className="h-8 w-auto"
             />
-
-            <PopoverPanel
-              focus
-              transition
-              className="absolute inset-x-0 top-0 z-30 mx-auto w-full max-w-3xl origin-top transform p-2 transition duration-150 data-[closed]:scale-95 data-[closed]:opacity-0 data-[enter]:ease-out data-[leave]:ease-in"
-            >
-              <div className="divide-y divide-gray-200 rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5">
-                <div className="pb-2 pt-3">
-                  <div className="flex items-center justify-between px-4">
-                    <div>
-                      <img
-                        alt="Your Company"
-                        src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=600"
-                        className="h-8 w-auto"
-                      />
-                    </div>
-                    <div className="-mr-2">
-                      <PopoverButton className="relative inline-flex items-center justify-center rounded-md bg-white p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500">
-                        <span className="absolute -inset-0.5" />
-                        <span className="sr-only">Close menu</span>
-                        <XMarkIcon aria-hidden="true" className="h-6 w-6" />
-                      </PopoverButton>
-                    </div>
-                  </div>
-                  <div className="mt-3 space-y-1 px-2">
-                    <a
-                      href="#"
-                      className="block rounded-md px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-100 hover:text-gray-800"
-                    >
-                      Home
-                    </a>
-                    <a
-                      href="#"
-                      className="block rounded-md px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-100 hover:text-gray-800"
-                    >
-                      Profile
-                    </a>
-                    <a
-                      href="#"
-                      className="block rounded-md px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-100 hover:text-gray-800"
-                    >
-                      Resources
-                    </a>
-                    <a
-                      href="#"
-                      className="block rounded-md px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-100 hover:text-gray-800"
-                    >
-                      Company Directory
-                    </a>
-                    <a
-                      href="#"
-                      className="block rounded-md px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-100 hover:text-gray-800"
-                    >
-                      Openings
-                    </a>
-                  </div>
-                </div>
-                <div className="pb-2 pt-4">
-                  <div className="flex items-center px-5">
-                    <div className="flex-shrink-0">
-                      <img alt="" src={user.imageUrl} className="h-10 w-10 rounded-full" />
-                    </div>
-                    <div className="ml-3 min-w-0 flex-1">
-                      <div className="truncate text-base font-medium text-gray-800">{user.name}</div>
-                      <div className="truncate text-sm font-medium text-gray-500">{user.email}</div>
-                    </div>
-                    <button
-                      type="button"
-                      className="relative ml-auto flex-shrink-0 rounded-full bg-white p-1 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                    >
-                      <span className="absolute -inset-1.5" />
-                      <span className="sr-only">View notifications</span>
-                      <BellIcon aria-hidden="true" className="h-6 w-6" />
-                    </button>
-                  </div>
-                  <div className="mt-3 space-y-1 px-2">
-                    {userNavigation.map((item) => (
-                      <a
-                        key={item.name}
-                        href={item.href}
-                        className="block rounded-md px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-100 hover:text-gray-800"
-                      >
-                        {item.name}
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </PopoverPanel>
           </div>
-        </Popover>
-        <main className="-mt-24 pb-8">
-          <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:max-w-7xl lg:px-8">
-            <h1 className="sr-only">Page title</h1>
-            {/* Main 3 column grid */}
-            <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3 lg:gap-8">
-              {/* Left column */}
-              <div className="grid grid-cols-1 gap-4 lg:col-span-2">
-                <section aria-labelledby="section-1-title">
-                  <h2 id="section-1-title" className="sr-only">
-                    Section title
-                  </h2>
-                  <div className="overflow-hidden rounded-lg bg-white shadow">
-                    <div className="p-6">{/* Your content */}</div>
-                  </div>
-                </section>
-              </div>
+          <nav className="mt-8">
+            <ul role="list" className="flex flex-col items-center space-y-1">
+              {navigation.map((item) => (
+                <li key={item.name}>
+                  <a
+                    href={item.href}
+                    className={classNames(
+                      item.current ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white',
+                      'group flex gap-x-3 rounded-md p-3 text-sm font-semibold leading-6',
+                    )}
+                  >
+                    <item.icon aria-hidden="true" className="h-6 w-6 shrink-0" />
+                    <span className="sr-only">{item.name}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </div>
 
-              {/* Right column */}
-              <div className="grid grid-cols-1 gap-4">
-                <section aria-labelledby="section-2-title">
-                  <h2 id="section-2-title" className="sr-only">
-                    Section title
-                  </h2>
-                  <div className="overflow-hidden rounded-lg bg-white shadow">
-                    <div className="p-6">{/* Your content */}</div>
-                  </div>
-                </section>
-              </div>
+       <div className="sticky top-0 z-40 flex items-center justify-between bg-gray-900 px-4 py-4 shadow-sm sm:px-6 lg:hidden">
+  <button type="button" onClick={() => setSidebarOpen(true)} className="-m-2.5 p-2.5 text-gray-400 lg:hidden">
+    <span className="sr-only">Open sidebar</span>
+    <Bars3Icon aria-hidden="true" className="h-6 w-6" />
+  </button>
+  
+  <div className="flex-1 text-sm font-semibold leading-6 text-white">Dashboard</div>
+  
+  <div className="flex items-center gap-x-4">
+    <a href="#">
+      <span className="sr-only">Your profile</span>
+      <img
+        alt=""
+        src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+        className="h-8 w-8 rounded-full bg-gray-800"
+      />
+    </a>
+
+    {/* Logout Button */}
+    <button
+      onClick={handleLogout}
+      className="bg-gray-800 text-white py-1 px-3 rounded-lg hover:bg-gray-700 transition-all duration-200 text-sm"
+    >
+      Log out
+    </button>
+  </div>
+</div>
+
+
+        <main className="lg:pl-20">
+          <div className="xl:pl-96">
+            <div className="px-4 py-10 sm:px-6 lg:px-8 lg:py-6">
+              {/* Main area */}
+              <button
+                onClick={handleLogout}
+                className="fixed top-4 right-4 bg-gray-800 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-all duration-200 text-sm sm:text-base"
+              >
+                Log out
+              </button>
             </div>
           </div>
         </main>
-        <footer>
-          <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:max-w-7xl lg:px-8">
-            <div className="border-t border-gray-200 py-8 text-center text-sm text-gray-500 sm:text-left">
-              <span className="block sm:inline">&copy; 2021 Your Company, Inc.</span>{' '}
-              <span className="block sm:inline">All rights reserved.</span>
-            </div>
-          </div>
-        </footer>
+
+        <aside className="fixed inset-y-0 left-20 hidden w-96 overflow-y-auto border-r border-gray-200 px-4 py-6 sm:px-6 lg:px-8 xl:block">
+          {/* Secondary column (hidden on smaller screens) */}
+        </aside>
       </div>
     </>
   )

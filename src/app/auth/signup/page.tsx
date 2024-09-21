@@ -1,5 +1,3 @@
-// src/app/auth/signup/page.tsx
-
 "use client"; // Add this line to mark the component as a Client Component
 
 import { useRouter } from 'next/navigation';
@@ -32,7 +30,7 @@ export default function Signup() {
           src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=500"
           className="mx-auto h-10 w-auto"
         />
-        <h2 className="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-white">
+        <h2 className="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-black">
           Create your account
         </h2>
       </div>
@@ -40,7 +38,7 @@ export default function Signup() {
       <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
         <form onSubmit={handleSignup} className="space-y-6">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium leading-6 text-white">
+            <label htmlFor="email" className="block text-sm font-medium leading-6 text-black">
               Email address
             </label>
             <div className="mt-2">
@@ -52,13 +50,13 @@ export default function Signup() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
-                className="block w-full rounded-md border-0 bg-white/5 py-1.5 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6"
+                className="block w-full rounded-md border border-gray-300 bg-white py-1.5 text-black shadow-sm focus:ring-2 focus:ring-indigo-500 sm:text-sm sm:leading-6"
               />
             </div>
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium leading-6 text-white">
+            <label htmlFor="password" className="block text-sm font-medium leading-6 text-black">
               Password
             </label>
             <div className="mt-2">
@@ -70,7 +68,7 @@ export default function Signup() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 autoComplete="new-password"
-                className="block w-full rounded-md border-0 bg-white/5 py-1.5 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6"
+                className="block w-full rounded-md border border-gray-300 bg-white py-1.5 text-black shadow-sm focus:ring-2 focus:ring-indigo-500 sm:text-sm sm:leading-6"
               />
             </div>
           </div>
@@ -78,16 +76,16 @@ export default function Signup() {
           <div>
             <button
               type="submit"
-              className="flex w-full justify-center rounded-md bg-indigo-500 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+              className="flex w-full justify-center  bg-indigo-500 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
             >
               Sign up
             </button>
           </div>
         </form>
 
-        <p className="mt-10 text-center text-sm text-gray-400">
+        <p className="mt-10 text-center text-sm text-gray-600">
           Already a member?{' '}
-          <a href="/auth/login" className="font-semibold leading-6 text-indigo-400 hover:text-indigo-300">
+          <a href="/auth/login" className="font-semibold leading-6 text-indigo-500 hover:text-indigo-400">
             Sign in
           </a>
         </p>
