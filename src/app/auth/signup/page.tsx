@@ -1,14 +1,29 @@
-
 "use client";
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import Link from 'next/link'; // Import Link component
+import Link from 'next/link';
+
+// Popup component
+const Popup = ({ message, onClose }: { message: string; onClose: () => void }) => (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+    <div className="bg-white p-8 rounded-lg shadow-xl">
+      <p className="text-xl mb-4">{message}</p>
+      <button
+        onClick={onClose}
+        className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800"
+      >
+        Close
+      </button>
+    </div>
+  </div>
+);
 
 export default function Signup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPopup, setShowPopup] = useState(false);
   const router = useRouter();
 
   const handleSignup = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -20,8 +35,13 @@ export default function Signup() {
     if (error) {
       console.error('Error signing up:', error.message);
     } else {
-      router.push('/auth/login');
+      setShowPopup(true);
     }
+  };
+
+  const closePopup = () => {
+    setShowPopup(false);
+    router.push('/auth/login');
   };
 
   return (
@@ -90,6 +110,13 @@ export default function Signup() {
           </a>
         </p>
       </div>
+
+      {showPopup && (
+        <Popup
+          message="Almost there! Check your email and then log in"
+          onClose={closePopup}
+        />
+      )}
     </div>
   );
 }
