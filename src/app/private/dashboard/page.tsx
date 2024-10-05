@@ -13,7 +13,7 @@ const navigation = [
   { name: 'Reports', href: '#', current: false },
 ];
 
-function classNames(...classes) {
+function classNames(...classes: (string | boolean | undefined | null)[]): string {
   return classes.filter(Boolean).join(' ');
 }
 
