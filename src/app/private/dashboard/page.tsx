@@ -17,9 +17,23 @@ function classNames(...classes: (string | boolean | undefined | null)[]): string
   return classes.filter(Boolean).join(' ');
 }
 
+interface PostgresChangePayload {
+  eventType: 'INSERT' | 'UPDATE' | 'DELETE';
+  new: any;
+  old: any;
+}
+
+interface Task {
+  id: number;
+  user_id: string;
+  text: string;
+  completed: boolean;
+  created_at: string;
+}
+
 export default function TaskDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [tasks, setTasks] = useState([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [newTask, setNewTask] = useState('');
   const router = useRouter();
 
@@ -31,7 +45,7 @@ export default function TaskDashboard() {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'tasks' },
-        (payload) => {
+        (payload: PostgresChangePayload) => {
           console.log('Change received!', payload);
           handleTaskChange(payload);
         }
@@ -43,7 +57,7 @@ export default function TaskDashboard() {
     };
   }, []);
 
-  const handleTaskChange = (payload) => {
+  const handleTaskChange = (payload: PostgresChangePayload) => {
     if (payload.eventType === 'INSERT') {
       setTasks((prevTasks) => [...prevTasks, payload.new]);
     } else if (payload.eventType === 'UPDATE') {
@@ -66,7 +80,7 @@ export default function TaskDashboard() {
       if (error) {
         console.error('Error fetching tasks:', error);
       } else {
-        setTasks(data);
+        setTasks(data || []);
       }
     }
   };
@@ -80,68 +94,67 @@ export default function TaskDashboard() {
     }
   };
 
-  const addTask = async (e) => {
+  const addTask = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (newTask.trim() !== '') {
       const { data: { user } } = await supabase.auth.getUser();
-      
-      // Create a new task object
-      const newTaskObject = {
-        id: Date.now(), // Temporary ID
-        user_id: user.id,
-        text: newTask,
-        completed: false,
-        created_at: new Date().toISOString()
-      };
+      if (user) {
+        // Create a new task object
+        const newTaskObject: Omit<Task, 'id'> = {
+          user_id: user.id,
+          text: newTask,
+          completed: false,
+          created_at: new Date().toISOString()
+        };
 
-      // Update local state immediately
-      setTasks(prevTasks => [...prevTasks, newTaskObject]);
-      setNewTask('');
+        // Update local state immediately
+        setTasks(prevTasks => [...prevTasks, { ...newTaskObject, id: Date.now() }]);
+        setNewTask('');
 
-      // Send to Supabase
-      const { data, error } = await supabase
+        // Send to Supabase
+        const { data, error } = await supabase
+          .from('tasks')
+          .insert([newTaskObject])
+          .select();
+        
+        if (error) {
+          console.error('Error adding task:', error);
+          // Optionally, remove the task from local state if it failed to save
+          setTasks(prevTasks => prevTasks.filter(task => task.text !== newTask));
+        } else if (data) {
+          // Update the temporary ID with the real one from the database
+          setTasks(prevTasks => prevTasks.map(task => 
+            task.text === newTask ? data[0] : task
+          ));
+        }
+      }
+    }
+  };
+
+  const toggleTask = async (id: number) => {
+    const taskToUpdate = tasks.find(task => task.id === id);
+    if (taskToUpdate) {
+      // Optimistically update local state
+      setTasks(prevTasks => prevTasks.map(task => 
+        task.id === id ? {...task, completed: !task.completed} : task
+      ));
+
+      const { error } = await supabase
         .from('tasks')
-        .insert([
-          { user_id: user.id, text: newTask, completed: false }
-        ])
-        .select();
+        .update({ completed: !taskToUpdate.completed })
+        .eq('id', id);
       
       if (error) {
-        console.error('Error adding task:', error);
-        // Optionally, remove the task from local state if it failed to save
-        setTasks(prevTasks => prevTasks.filter(task => task.id !== newTaskObject.id));
-      } else {
-        // Update the temporary ID with the real one from the database
+        console.error('Error updating task:', error);
+        // Revert the change if there was an error
         setTasks(prevTasks => prevTasks.map(task => 
-          task.id === newTaskObject.id ? data[0] : task
+          task.id === id ? taskToUpdate : task
         ));
       }
     }
   };
 
-  const toggleTask = async (id) => {
-    const taskToUpdate = tasks.find(task => task.id === id);
-    
-    // Optimistically update local state
-    setTasks(prevTasks => prevTasks.map(task => 
-      task.id === id ? {...task, completed: !task.completed} : task
-    ));
-
-    const { error } = await supabase
-      .from('tasks')
-      .update({ completed: !taskToUpdate.completed })
-      .eq('id', id);
-    
-    if (error) {
-      console.error('Error updating task:', error);
-      // Revert the change if there was an error
-      setTasks(prevTasks => prevTasks.map(task => 
-        task.id === id ? taskToUpdate : task
-      ));
-    }
-  };
-
-  const removeTask = async (id) => {
+  const removeTask = async (id: number) => {
     // Optimistically remove from local state
     setTasks(prevTasks => prevTasks.filter(task => task.id !== id));
 
