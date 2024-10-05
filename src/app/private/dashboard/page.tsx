@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabaseClient';
 
 const navigation = [
   { name: 'Dashboard', href: '#', current: true },
@@ -22,37 +23,142 @@ export default function TaskDashboard() {
   const [newTask, setNewTask] = useState('');
   const router = useRouter();
 
-  const handleLogout = () => {
-    // Here you would typically clear any authentication tokens or user data
-    // For example: localStorage.removeItem('token');
-    
-    console.log('Logging out...');
-    
-    // Redirect to the login page
-    router.push('/auth/login');
-  };
+  useEffect(() => {
+    fetchTasks();
 
-  const addTask = (e) => {
-    e.preventDefault();
-    if (newTask.trim() !== '') {
-      setTasks([...tasks, { id: Date.now(), text: newTask, completed: false }]);
-      setNewTask('');
+    const channel = supabase
+      .channel('custom-insert-channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'tasks' },
+        (payload) => {
+          console.log('Change received!', payload);
+          handleTaskChange(payload);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const handleTaskChange = (payload) => {
+    if (payload.eventType === 'INSERT') {
+      setTasks((prevTasks) => [...prevTasks, payload.new]);
+    } else if (payload.eventType === 'UPDATE') {
+      setTasks((prevTasks) =>
+        prevTasks.map((task) => (task.id === payload.new.id ? payload.new : task))
+      );
+    } else if (payload.eventType === 'DELETE') {
+      setTasks((prevTasks) => prevTasks.filter((task) => task.id !== payload.old.id));
     }
   };
 
-  const toggleTask = (id) => {
-    setTasks(tasks.map(task => 
-      task.id === id ? { ...task, completed: !task.completed } : task
-    ));
+  const fetchTasks = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .order('created_at', { ascending: true });
+      
+      if (error) {
+        console.error('Error fetching tasks:', error);
+      } else {
+        setTasks(data);
+      }
+    }
   };
 
-  const removeTask = (id) => {
-    setTasks(tasks.filter(task => task.id !== id));
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Error logging out:', error);
+    } else {
+      router.push('/auth/login');
+    }
+  };
+
+  const addTask = async (e) => {
+    e.preventDefault();
+    if (newTask.trim() !== '') {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // Create a new task object
+      const newTaskObject = {
+        id: Date.now(), // Temporary ID
+        user_id: user.id,
+        text: newTask,
+        completed: false,
+        created_at: new Date().toISOString()
+      };
+
+      // Update local state immediately
+      setTasks(prevTasks => [...prevTasks, newTaskObject]);
+      setNewTask('');
+
+      // Send to Supabase
+      const { data, error } = await supabase
+        .from('tasks')
+        .insert([
+          { user_id: user.id, text: newTask, completed: false }
+        ])
+        .select();
+      
+      if (error) {
+        console.error('Error adding task:', error);
+        // Optionally, remove the task from local state if it failed to save
+        setTasks(prevTasks => prevTasks.filter(task => task.id !== newTaskObject.id));
+      } else {
+        // Update the temporary ID with the real one from the database
+        setTasks(prevTasks => prevTasks.map(task => 
+          task.id === newTaskObject.id ? data[0] : task
+        ));
+      }
+    }
+  };
+
+  const toggleTask = async (id) => {
+    const taskToUpdate = tasks.find(task => task.id === id);
+    
+    // Optimistically update local state
+    setTasks(prevTasks => prevTasks.map(task => 
+      task.id === id ? {...task, completed: !task.completed} : task
+    ));
+
+    const { error } = await supabase
+      .from('tasks')
+      .update({ completed: !taskToUpdate.completed })
+      .eq('id', id);
+    
+    if (error) {
+      console.error('Error updating task:', error);
+      // Revert the change if there was an error
+      setTasks(prevTasks => prevTasks.map(task => 
+        task.id === id ? taskToUpdate : task
+      ));
+    }
+  };
+
+  const removeTask = async (id) => {
+    // Optimistically remove from local state
+    setTasks(prevTasks => prevTasks.filter(task => task.id !== id));
+
+    const { error } = await supabase
+      .from('tasks')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      console.error('Error removing task:', error);
+      // If there was an error, fetch tasks again to ensure consistency
+      fetchTasks();
+    }
   };
 
   const completedTasks = tasks.filter(task => task.completed).length;
   const totalTasks = tasks.length;
-
   const completedPercentage = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
   return (
@@ -60,7 +166,7 @@ export default function TaskDashboard() {
       {/* Sidebar */}
       <div className={`${sidebarOpen ? 'block' : 'hidden'} lg:block lg:w-64 bg-gray-800 text-white`}>
         <div className="p-4">
-          <h2 className="text-2xl font-bold mb-4">Task Manager</h2>
+          <h2 className="text-2xl font-bold mb-4">ORO</h2>
           <nav>
             <ul>
               {navigation.map((item) => (
