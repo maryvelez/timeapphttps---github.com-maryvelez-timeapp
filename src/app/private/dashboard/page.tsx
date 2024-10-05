@@ -4,6 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 
+// Add this line to make the page dynamic
+export const dynamic = 'force-dynamic';
+
 const navigation = [
   { name: 'Dashboard', href: '#', current: true },
   { name: 'Team', href: '#', current: false },
@@ -82,6 +85,9 @@ export default function TaskDashboard() {
       } else {
         setTasks(data || []);
       }
+    } else {
+      console.log('No authenticated user');
+      router.push('/auth/login');
     }
   };
 
@@ -99,7 +105,6 @@ export default function TaskDashboard() {
     if (newTask.trim() !== '') {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // Create a new task object
         const newTaskObject: Omit<Task, 'id'> = {
           user_id: user.id,
           text: newTask,
@@ -107,11 +112,9 @@ export default function TaskDashboard() {
           created_at: new Date().toISOString()
         };
 
-        // Update local state immediately
         setTasks(prevTasks => [...prevTasks, { ...newTaskObject, id: Date.now() }]);
         setNewTask('');
 
-        // Send to Supabase
         const { data, error } = await supabase
           .from('tasks')
           .insert([newTaskObject])
@@ -119,10 +122,8 @@ export default function TaskDashboard() {
         
         if (error) {
           console.error('Error adding task:', error);
-          // Optionally, remove the task from local state if it failed to save
           setTasks(prevTasks => prevTasks.filter(task => task.text !== newTask));
         } else if (data) {
-          // Update the temporary ID with the real one from the database
           setTasks(prevTasks => prevTasks.map(task => 
             task.text === newTask ? data[0] : task
           ));
@@ -134,7 +135,6 @@ export default function TaskDashboard() {
   const toggleTask = async (id: number) => {
     const taskToUpdate = tasks.find(task => task.id === id);
     if (taskToUpdate) {
-      // Optimistically update local state
       setTasks(prevTasks => prevTasks.map(task => 
         task.id === id ? {...task, completed: !task.completed} : task
       ));
@@ -146,7 +146,6 @@ export default function TaskDashboard() {
       
       if (error) {
         console.error('Error updating task:', error);
-        // Revert the change if there was an error
         setTasks(prevTasks => prevTasks.map(task => 
           task.id === id ? taskToUpdate : task
         ));
@@ -155,7 +154,6 @@ export default function TaskDashboard() {
   };
 
   const removeTask = async (id: number) => {
-    // Optimistically remove from local state
     setTasks(prevTasks => prevTasks.filter(task => task.id !== id));
 
     const { error } = await supabase
@@ -165,7 +163,6 @@ export default function TaskDashboard() {
     
     if (error) {
       console.error('Error removing task:', error);
-      // If there was an error, fetch tasks again to ensure consistency
       fetchTasks();
     }
   };
