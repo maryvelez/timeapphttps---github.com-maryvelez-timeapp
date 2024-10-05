@@ -1,176 +1,198 @@
 'use client'
 
-import { useState } from 'react'
-import { Dialog, DialogBackdrop, DialogPanel, TransitionChild } from '@headlessui/react'
-import {
-  Bars3Icon,
-  CalendarIcon,
-  ChartPieIcon,
-  DocumentDuplicateIcon,
-  FolderIcon,
-  HomeIcon,
-  UsersIcon,
-  XMarkIcon,
-} from '@heroicons/react/24/outline'
-import { useRouter } from 'next/navigation'
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 const navigation = [
-  { name: 'Dashboard', href: '#', icon: HomeIcon, current: true },
-  { name: 'Team', href: '#', icon: UsersIcon, current: false },
-  { name: 'Projects', href: '#', icon: FolderIcon, current: false },
-  { name: 'Calendar', href: '#', icon: CalendarIcon, current: false },
-  { name: 'Documents', href: '#', icon: DocumentDuplicateIcon, current: false },
-  { name: 'Reports', href: '#', icon: ChartPieIcon, current: false },
-]
+  { name: 'Dashboard', href: '#', current: true },
+  { name: 'Team', href: '#', current: false },
+  { name: 'Projects', href: '#', current: false },
+  { name: 'Calendar', href: '#', current: false },
+  { name: 'Documents', href: '#', current: false },
+  { name: 'Reports', href: '#', current: false },
+];
 
 function classNames(...classes) {
-  return classes.filter(Boolean).join(' ')
+  return classes.filter(Boolean).join(' ');
 }
 
-export default function Example() {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const router = useRouter()
+export default function TaskDashboard() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [tasks, setTasks] = useState([]);
+  const [newTask, setNewTask] = useState('');
+  const router = useRouter();
 
   const handleLogout = () => {
-    // Add your logout logic here (clear tokens, sessions, etc.)
-    console.log('Logging out...')
+    // Here you would typically clear any authentication tokens or user data
+    // For example: localStorage.removeItem('token');
     
-    // After logout logic, redirect to /auth
-    router.push('/auth/login')
-  }
+    console.log('Logging out...');
+    
+    // Redirect to the login page
+    router.push('/auth/login');
+  };
+
+  const addTask = (e) => {
+    e.preventDefault();
+    if (newTask.trim() !== '') {
+      setTasks([...tasks, { id: Date.now(), text: newTask, completed: false }]);
+      setNewTask('');
+    }
+  };
+
+  const toggleTask = (id) => {
+    setTasks(tasks.map(task => 
+      task.id === id ? { ...task, completed: !task.completed } : task
+    ));
+  };
+
+  const removeTask = (id) => {
+    setTasks(tasks.filter(task => task.id !== id));
+  };
+
+  const completedTasks = tasks.filter(task => task.completed).length;
+  const totalTasks = tasks.length;
+
+  const completedPercentage = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
   return (
-    <>
-      <div>
-        <Dialog open={sidebarOpen} onClose={setSidebarOpen} className="relative z-50 lg:hidden">
-          <DialogBackdrop
-            transition
-            className="fixed inset-0 bg-gray-900/80 transition-opacity duration-300 ease-linear data-[closed]:opacity-0"
-          />
-
-          <div className="fixed inset-0 flex">
-            <DialogPanel
-              transition
-              className="relative mr-16 flex w-full max-w-xs flex-1 transform transition duration-300 ease-in-out data-[closed]:-translate-x-full"
-            >
-              <TransitionChild>
-                <div className="absolute left-full top-0 flex w-16 justify-center pt-5 duration-300 ease-in-out data-[closed]:opacity-0">
-                  <button type="button" onClick={() => setSidebarOpen(false)} className="-m-2.5 p-2.5">
-                    <span className="sr-only">Close sidebar</span>
-                    <XMarkIcon aria-hidden="true" className="h-6 w-6 text-white" />
-                  </button>
-                </div>
-              </TransitionChild>
-
-              <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-gray-900 px-6 pb-2 ring-1 ring-white/10">
-                <div className="flex h-16 shrink-0 items-center">
-                  <img
-                    alt="Your Company"
-                    src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=500"
-                    className="h-8 w-auto"
-                  />
-                </div>
-                <nav className="flex flex-1 flex-col">
-                  <ul role="list" className="-mx-2 flex-1 space-y-1">
-                    {navigation.map((item) => (
-                      <li key={item.name}>
-                        <a
-                          href={item.href}
-                          className={classNames(
-                            item.current
-                              ? 'bg-gray-800 text-white'
-                              : 'text-gray-400 hover:bg-gray-800 hover:text-white',
-                            'group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6',
-                          )}
-                        >
-                          <item.icon aria-hidden="true" className="h-6 w-6 shrink-0" />
-                          {item.name}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </nav>
-              </div>
-            </DialogPanel>
-          </div>
-        </Dialog>
-
-        {/* Static sidebar for desktop */}
-        <div className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 lg:block lg:w-20 lg:overflow-y-auto lg:bg-gray-900 lg:pb-4">
-          <div className="flex h-16 shrink-0 items-center justify-center">
-            <img
-              alt="Your Company"
-              src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=500"
-              className="h-8 w-auto"
-            />
-          </div>
-          <nav className="mt-8">
-            <ul role="list" className="flex flex-col items-center space-y-1">
+    <div className="flex h-screen bg-gray-100">
+      {/* Sidebar */}
+      <div className={`${sidebarOpen ? 'block' : 'hidden'} lg:block lg:w-64 bg-gray-800 text-white`}>
+        <div className="p-4">
+          <h2 className="text-2xl font-bold mb-4">Task Manager</h2>
+          <nav>
+            <ul>
               {navigation.map((item) => (
-                <li key={item.name}>
+                <li key={item.name} className="mb-2">
                   <a
                     href={item.href}
                     className={classNames(
-                      item.current ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white',
-                      'group flex gap-x-3 rounded-md p-3 text-sm font-semibold leading-6',
+                      item.current ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white',
+                      'block px-3 py-2 rounded-md text-base font-medium'
                     )}
                   >
-                    <item.icon aria-hidden="true" className="h-6 w-6 shrink-0" />
-                    <span className="sr-only">{item.name}</span>
+                    {item.name}
                   </a>
                 </li>
               ))}
             </ul>
           </nav>
         </div>
+      </div>
 
-       <div className="sticky top-0 z-40 flex items-center justify-between bg-gray-900 px-4 py-4 shadow-sm sm:px-6 lg:hidden">
-  <button type="button" onClick={() => setSidebarOpen(true)} className="-m-2.5 p-2.5 text-gray-400 lg:hidden">
-    <span className="sr-only">Open sidebar</span>
-    <Bars3Icon aria-hidden="true" className="h-6 w-6" />
-  </button>
-  
-  <div className="flex-1 text-sm font-semibold leading-6 text-white">Dashboard</div>
-  
-  <div className="flex items-center gap-x-4">
-    <a href="#">
-      <span className="sr-only">Your profile</span>
-      <img
-        alt=""
-        src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-        className="h-8 w-8 rounded-full bg-gray-800"
-      />
-    </a>
+      {/* Main content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Top bar */}
+        <div className="bg-white shadow">
+          <div className="px-4 py-2 flex justify-between items-center">
+            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="lg:hidden">
+              <div className="w-6 h-6 flex flex-col justify-around">
+                <div className="w-full h-0.5 bg-gray-600"></div>
+                <div className="w-full h-0.5 bg-gray-600"></div>
+                <div className="w-full h-0.5 bg-gray-600"></div>
+              </div>
+            </button>
+            <button
+              onClick={handleLogout}
+              className="bg-gray-800 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-all duration-200 text-sm"
+            >
+              Log out
+            </button>
+          </div>
+        </div>
 
-    {/* Logout Button */}
-    <button
-      onClick={handleLogout}
-      className="bg-gray-800 text-white py-1 px-3 rounded-lg hover:bg-gray-700 transition-all duration-200 text-sm"
-    >
-      Log out
-    </button>
-  </div>
-</div>
-
-
-        <main className="lg:pl-20">
-          <div className="xl:pl-96">
-            <div className="px-4 py-10 sm:px-6 lg:px-8 lg:py-6">
-              {/* Main area */}
-              <button
-                onClick={handleLogout}
-                className="fixed top-4 right-4 bg-gray-800 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-all duration-200 text-sm sm:text-base"
-              >
-                Log out
+        {/* Main content area */}
+        <div className="flex-1 overflow-auto p-4">
+          {/* Task input and list */}
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold mb-4">Tasks</h2>
+            <form onSubmit={addTask} className="mb-4">
+              <input
+                type="text"
+                value={newTask}
+                onChange={(e) => setNewTask(e.target.value)}
+                placeholder="Add a new task"
+                className="w-full p-2 border border-gray-300 rounded"
+              />
+              <button type="submit" className="mt-2 bg-blue-500 text-white p-2 rounded hover:bg-blue-600">
+                Add Task
               </button>
+            </form>
+            <ul>
+              {tasks.map(task => (
+                <li key={task.id} className="flex items-center justify-between mb-2 bg-white p-2 rounded shadow">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={task.completed}
+                      onChange={() => toggleTask(task.id)}
+                      className="mr-2"
+                    />
+                    <span className={task.completed ? 'line-through' : ''}>{task.text}</span>
+                  </div>
+                  <button
+                    onClick={() => removeTask(task.id)}
+                    className="bg-red-500 text-white px-2 py-1 rounded text-sm hover:bg-red-600"
+                  >
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Task completion visualizations */}
+          <div className="mb-8">
+            <h3 className="text-xl font-bold mb-4">Task Completion</h3>
+            
+            {/* Progress bar */}
+            <div className="mb-4">
+              <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                <div 
+                  className="bg-blue-600 h-2.5 rounded-full" 
+                  style={{ width: `${completedPercentage}%` }}
+                ></div>
+              </div>
+              <div className="flex justify-between mt-2">
+                <span>Completed: {completedTasks}</span>
+                <span>Total: {totalTasks}</span>
+              </div>
+            </div>
+
+            {/* Pie chart */}
+            <div className="flex items-center justify-center">
+              <div className="relative w-32 h-32">
+                <svg className="w-full h-full" viewBox="0 0 32 32">
+                  <circle 
+                    className="text-gray-200" 
+                    strokeWidth="4" 
+                    stroke="currentColor" 
+                    fill="transparent" 
+                    r="14" 
+                    cx="16" 
+                    cy="16" 
+                  />
+                  <circle 
+                    className="text-blue-600" 
+                    strokeWidth="4" 
+                    strokeDasharray={`${completedPercentage} 100`}
+                    strokeLinecap="round" 
+                    stroke="currentColor" 
+                    fill="transparent" 
+                    r="14" 
+                    cx="16" 
+                    cy="16" 
+                  />
+                </svg>
+                <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-xl font-bold">
+                  {Math.round(completedPercentage)}%
+                </span>
+              </div>
             </div>
           </div>
-        </main>
-
-        <aside className="fixed inset-y-0 left-20 hidden w-96 overflow-y-auto border-r border-gray-200 px-4 py-6 sm:px-6 lg:px-8 xl:block">
-          {/* Secondary column (hidden on smaller screens) */}
-        </aside>
+        </div>
       </div>
-    </>
-  )
+    </div>
+  );
 }

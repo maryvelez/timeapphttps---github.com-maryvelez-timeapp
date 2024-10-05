@@ -1,8 +1,10 @@
-"use client"; // Add this line to mark the component as a Client Component
+
+"use client";
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import Link from 'next/link'; // Import Link component
 
 export default function Signup() {
   const [email, setEmail] = useState('');
@@ -23,22 +25,22 @@ export default function Signup() {
   };
 
   return (
-    <div className="flex min-h-full flex-1 flex-col justify-center px-6 py-12 lg:px-8">
+    <div className="flex min-h-full flex-1 flex-col justify-center px-6 py-12 lg:px-8 bg-white">
       <div className="sm:mx-auto sm:w-full sm:max-w-sm">
-        <img
-          alt="Your Company"
-          src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=500"
-          className="mx-auto h-10 w-auto"
-        />
-        <h2 className="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-black">
-          Create your account
+        <Link href="/">
+          <h1 className="text-4xl font-bold text-center text-black cursor-pointer">
+            ORO
+          </h1>
+        </Link>
+        <h2 className="mt-8 text-center text-3xl font-bold text-gray-900">
+          Create Your Oro Account
         </h2>
       </div>
 
-      <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-sm">
         <form onSubmit={handleSignup} className="space-y-6">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium leading-6 text-black">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-900">
               Email address
             </label>
             <div className="mt-2">
@@ -50,13 +52,13 @@ export default function Signup() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
-                className="block w-full rounded-md border border-gray-300 bg-white py-1.5 text-black shadow-sm focus:ring-2 focus:ring-indigo-500 sm:text-sm sm:leading-6"
+                className="block w-full rounded-md border border-gray-400 bg-white py-2 px-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-black sm:text-sm"
               />
             </div>
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium leading-6 text-black">
+            <label htmlFor="password" className="block text-sm font-medium text-gray-900">
               Password
             </label>
             <div className="mt-2">
@@ -68,24 +70,22 @@ export default function Signup() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 autoComplete="new-password"
-                className="block w-full rounded-md border border-gray-300 bg-white py-1.5 text-black shadow-sm focus:ring-2 focus:ring-indigo-500 sm:text-sm sm:leading-6"
+                className="block w-full rounded-md border border-gray-400 bg-white py-2 px-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-black sm:text-sm"
               />
             </div>
           </div>
 
-          <div>
-            <button
-              type="submit"
-              className="flex w-full justify-center  bg-indigo-500 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
-            >
-              Sign up
-            </button>
-          </div>
+          <button
+            type="submit"
+            className="flex w-full justify-center rounded-md border border-gray-900 bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-900 focus:ring-2 focus:ring-black focus:ring-offset-2"
+          >
+            Sign Up
+          </button>
         </form>
 
-        <p className="mt-10 text-center text-sm text-gray-600">
+        <p className="mt-6 text-center text-sm text-gray-600">
           Already a member?{' '}
-          <a href="/auth/login" className="font-semibold leading-6 text-indigo-500 hover:text-indigo-400">
+          <a href="/auth/login" className="font-semibold text-gray-900 hover:underline">
             Sign in
           </a>
         </p>
