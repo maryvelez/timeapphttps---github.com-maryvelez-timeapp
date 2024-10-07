@@ -198,6 +198,7 @@ export default function TaskDashboard() {
       </div>
 
       {/* Main content */}
+      
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top bar */}
         <div className="bg-white shadow">
@@ -220,44 +221,6 @@ export default function TaskDashboard() {
 
         {/* Main content area */}
         <div className="flex-1 overflow-auto p-4">
-          {/* Task input and list */}
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold mb-4">Tasks</h2>
-            <form onSubmit={addTask} className="mb-4">
-              <input
-                type="text"
-                value={newTask}
-                onChange={(e) => setNewTask(e.target.value)}
-                placeholder="Add a new task"
-                className="w-full p-2 border border-gray-300 rounded"
-              />
-              <button type="submit" className="mt-2 bg-blue-500 text-white p-2 rounded hover:bg-blue-600">
-                Add Task
-              </button>
-            </form>
-            <ul>
-              {tasks.map(task => (
-                <li key={task.id} className="flex items-center justify-between mb-2 bg-white p-2 rounded shadow">
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={task.completed}
-                      onChange={() => toggleTask(task.id)}
-                      className="mr-2"
-                    />
-                    <span className={task.completed ? 'line-through' : ''}>{task.text}</span>
-                  </div>
-                  <button
-                    onClick={() => removeTask(task.id)}
-                    className="bg-red-500 text-white px-2 py-1 rounded text-sm hover:bg-red-600"
-                  >
-                    Remove
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-
           {/* Task completion visualizations */}
           <div className="mb-8">
             <h3 className="text-xl font-bold mb-4">Task Completion</h3>
@@ -307,6 +270,45 @@ export default function TaskDashboard() {
               </div>
             </div>
           </div>
+          {/* Task input and list */}
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold mb-4">Tasks</h2>
+            <form onSubmit={addTask} className="mb-4">
+              <input
+                type="text"
+                value={newTask}
+                onChange={(e) => setNewTask(e.target.value)}
+                placeholder="Add a new task"
+                className="w-full p-2 border border-gray-300 rounded"
+              />
+              <button type="submit" className="mt-2 bg-blue-500 text-white p-2 rounded hover:bg-blue-600">
+                Add Task
+              </button>
+            </form>
+            <ul>
+              {tasks.map(task => (
+                <li key={task.id} className="flex items-center justify-between mb-2 bg-white p-2 rounded shadow">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={task.completed}
+                      onChange={() => toggleTask(task.id)}
+                      className="mr-2"
+                    />
+                    <span className={task.completed ? 'line-through' : ''}>{task.text}</span>
+                  </div>
+                  <button
+                    onClick={() => removeTask(task.id)}
+                    className="bg-red-500 text-white px-2 py-1 rounded text-sm hover:bg-red-600"
+                  >
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          
         </div>
       </div>
     </div>
