@@ -8,12 +8,12 @@ import { supabase } from '@/lib/supabaseClient';
 export const dynamic = 'force-dynamic';
 
 const navigation = [
-  { name: 'Dashboard', href: '#', current: true },
-  { name: 'Team', href: '#', current: false },
-  { name: 'Projects', href: '#', current: false },
-  { name: 'Calendar', href: '#', current: false },
-  { name: 'Documents', href: '#', current: false },
-  { name: 'Reports', href: '#', current: false },
+  { name: 'Daily', href: '#', current: true },
+  { name: 'Locked In', href: '/private/dashboard/locked_in', current: false },
+  //{ name: 'Projects', href: '#', current: false },
+  //{ name: 'Calendar', href: '#', current: false },
+  // name: 'Documents', href: '#', current: false },
+  //{ name: 'Reports', href: '#', current: false },
 ];
 
 function classNames(...classes: (string | boolean | undefined | null)[]): string {
