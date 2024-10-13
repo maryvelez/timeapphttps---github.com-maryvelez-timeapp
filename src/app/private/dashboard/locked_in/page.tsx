@@ -17,6 +17,7 @@ interface ActiveCourse extends Course {
 const navigation = [
   { name: 'Daily', href: '/private/dashboard', current: false },
   { name: 'Locked In', href: '/private/dashboard/locked_in', current: true },
+  { name: 'Mind', href: '/private/dashboard/mental-health', current: false },
 ];
 
 function classNames(...classes: (string | boolean | undefined | null)[]): string {
