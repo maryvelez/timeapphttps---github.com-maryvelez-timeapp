@@ -10,6 +10,7 @@ export const dynamic = 'force-dynamic';
 const navigation = [
   { name: 'Daily', href: '#', current: true },
   { name: 'Locked In', href: '/private/dashboard/locked_in', current: false },
+  { name: 'Mind', href: '/private/dashboard/mental-health', current: false },
   //{ name: 'Projects', href: '#', current: false },
   //{ name: 'Calendar', href: '#', current: false },
   // name: 'Documents', href: '#', current: false },
