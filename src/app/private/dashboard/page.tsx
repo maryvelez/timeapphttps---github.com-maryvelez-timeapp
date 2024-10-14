@@ -4,93 +4,138 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 
-// Add this line to make the page dynamic
 export const dynamic = 'force-dynamic';
 
 const navigation = [
-  { name: 'Daily', href: '#', current: true },
+  { name: 'Personal', href: '#', current: true },
+  { name: 'Tasks', href: '/private/dashboard/tasks', current: false },
   { name: 'Locked In', href: '/private/dashboard/locked_in', current: false },
   { name: 'Mind', href: '/private/dashboard/mental-health', current: false },
-  //{ name: 'Projects', href: '#', current: false },
-  //{ name: 'Calendar', href: '#', current: false },
-  // name: 'Documents', href: '#', current: false },
-  //{ name: 'Reports', href: '#', current: false },
 ];
 
 function classNames(...classes: (string | boolean | undefined | null)[]): string {
   return classes.filter(Boolean).join(' ');
 }
 
-interface PostgresChangePayload {
-  eventType: 'INSERT' | 'UPDATE' | 'DELETE';
-  new: any;
-  old: any;
-}
-
-interface Task {
+interface Goal {
   id: number;
-  user_id: string;
-  text: string;
-  completed: boolean;
-  created_at: string;
+  year: number;
+  goal: string;
 }
 
-export default function TaskDashboard() {
+function getYearLabel(year: number): string {
+  const currentYear = new Date().getFullYear();
+  return (currentYear + year - 1).toString();
+}
+
+export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [newTask, setNewTask] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
   const router = useRouter();
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [newGoal, setNewGoal] = useState({ year: 1, goal: '' });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchTasks();
-
-    const channel = supabase
-      .channel('custom-insert-channel')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'tasks' },
-        (payload: PostgresChangePayload) => {
-          console.log('Change received!', payload);
-          handleTaskChange(payload);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    fetchGoals();
   }, []);
 
-  const handleTaskChange = (payload: PostgresChangePayload) => {
-    if (payload.eventType === 'INSERT') {
-      setTasks((prevTasks) => [...prevTasks, payload.new]);
-    } else if (payload.eventType === 'UPDATE') {
-      setTasks((prevTasks) =>
-        prevTasks.map((task) => (task.id === payload.new.id ? payload.new : task))
-      );
-    } else if (payload.eventType === 'DELETE') {
-      setTasks((prevTasks) => prevTasks.filter((task) => task.id !== payload.old.id));
-    }
-  };
+  async function fetchGoals() {
+    try {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('No authenticated user');
 
-  const fetchTasks = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
       const { data, error } = await supabase
-        .from('tasks')
+        .from('five_year_plan')
         .select('*')
-        .order('created_at', { ascending: true });
-      
-      if (error) {
-        console.error('Error fetching tasks:', error);
-      } else {
-        setTasks(data || []);
-      }
-    } else {
-      console.log('No authenticated user');
-      router.push('/auth/login');
+        .eq('user_id', user.id)
+        .order('year', { ascending: true });
+
+      if (error) throw error;
+      setGoals(data || []);
+    } catch (error: any) {
+      setError('Error fetching goals: ' + error.message);
+      console.error('Error fetching goals:', error);
+    } finally {
+      setLoading(false);
     }
-  };
+  }
+
+  async function addGoal(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newGoal.goal.trim()) {
+      setError('Please enter a goal');
+      return;
+    }
+    try {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('No authenticated user');
+
+      const { data, error } = await supabase
+        .from('five_year_plan')
+        .insert([{ 
+          user_id: user.id,
+          year: newGoal.year, 
+          goal: newGoal.goal.trim() 
+        }])
+        .select();
+
+      if (error) throw error;
+
+      console.log('Goal added successfully:', data);
+      setSuccessMessage('Submitted');
+      setGoals([...goals, data[0]]);
+      setNewGoal({ year: 1, goal: '' });
+      setError(null);
+    } catch (error: any) {
+      console.error('Error adding goal:', error.message, error.details, error.hint);
+      setError(`Failed to add goal: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function updateGoal(id: number, updatedGoal: string) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('No authenticated user');
+
+      const { error } = await supabase
+        .from('five_year_plan')
+        .update({ goal: updatedGoal })
+        .eq('id', id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      setGoals(goals.map(goal => goal.id === id ? { ...goal, goal: updatedGoal } : goal));
+    } catch (error: any) {
+      setError('Error updating goal: ' + error.message);
+      console.error('Error updating goal:', error);
+    }
+  }
+
+  async function deleteGoal(id: number) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('No authenticated user');
+
+      const { error } = await supabase
+        .from('five_year_plan')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      setGoals(goals.filter(goal => goal.id !== id));
+    } catch (error: any) {
+      setError('Error deleting goal: ' + error.message);
+      console.error('Error deleting goal:', error);
+    }
+  }
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
@@ -101,81 +146,10 @@ export default function TaskDashboard() {
     }
   };
 
-  const addTask = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (newTask.trim() !== '') {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const newTaskObject: Omit<Task, 'id'> = {
-          user_id: user.id,
-          text: newTask,
-          completed: false,
-          created_at: new Date().toISOString()
-        };
-
-        setTasks(prevTasks => [...prevTasks, { ...newTaskObject, id: Date.now() }]);
-        setNewTask('');
-
-        const { data, error } = await supabase
-          .from('tasks')
-          .insert([newTaskObject])
-          .select();
-        
-        if (error) {
-          console.error('Error adding task:', error);
-          setTasks(prevTasks => prevTasks.filter(task => task.text !== newTask));
-        } else if (data) {
-          setTasks(prevTasks => prevTasks.map(task => 
-            task.text === newTask ? data[0] : task
-          ));
-        }
-      }
-    }
-  };
-
-  const toggleTask = async (id: number) => {
-    const taskToUpdate = tasks.find(task => task.id === id);
-    if (taskToUpdate) {
-      setTasks(prevTasks => prevTasks.map(task => 
-        task.id === id ? {...task, completed: !task.completed} : task
-      ));
-
-      const { error } = await supabase
-        .from('tasks')
-        .update({ completed: !taskToUpdate.completed })
-        .eq('id', id);
-      
-      if (error) {
-        console.error('Error updating task:', error);
-        setTasks(prevTasks => prevTasks.map(task => 
-          task.id === id ? taskToUpdate : task
-        ));
-      }
-    }
-  };
-
-  const removeTask = async (id: number) => {
-    setTasks(prevTasks => prevTasks.filter(task => task.id !== id));
-
-    const { error } = await supabase
-      .from('tasks')
-      .delete()
-      .eq('id', id);
-    
-    if (error) {
-      console.error('Error removing task:', error);
-      fetchTasks();
-    }
-  };
-
-  const completedTasks = tasks.filter(task => task.completed).length;
-  const totalTasks = tasks.length;
-  const completedPercentage = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
-
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen bg-[#F0F4F8]">
       {/* Sidebar */}
-      <div className={`${sidebarOpen ? 'block' : 'hidden'} lg:block lg:w-64 bg-gray-800 text-white`}>
+      <div className={`${sidebarOpen ? 'block' : 'hidden'} lg:block lg:w-64 bg-[#5B7083] text-white`}>
         <div className="p-4">
           <h2 className="text-2xl font-bold mb-4">ORO</h2>
           <nav>
@@ -185,8 +159,8 @@ export default function TaskDashboard() {
                   <a
                     href={item.href}
                     className={classNames(
-                      item.current ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white',
-                      'block px-3 py-2 rounded-md text-base font-medium'
+                      item.current ? 'bg-[#7999B6] text-white' : 'text-[#E1E8ED] hover:bg-[#7999B6] hover:text-white',
+                      'block px-3 py-2 rounded-md text-base font-medium transition-colors duration-200'
                     )}
                   >
                     {item.name}
@@ -199,117 +173,137 @@ export default function TaskDashboard() {
       </div>
 
       {/* Main content */}
-      
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top bar */}
         <div className="bg-white shadow">
           <div className="px-4 py-2 flex justify-between items-center">
-            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="lg:hidden">
+            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="lg:hidden text-[#5B7083]">
               <div className="w-6 h-6 flex flex-col justify-around">
-                <div className="w-full h-0.5 bg-gray-600"></div>
-                <div className="w-full h-0.5 bg-gray-600"></div>
-                <div className="w-full h-0.5 bg-gray-600"></div>
+                <div className="w-full h-0.5 bg-current"></div>
+                <div className="w-full h-0.5 bg-current"></div>
+                <div className="w-full h-0.5 bg-current"></div>
               </div>
             </button>
-            <button
-              onClick={handleLogout}
-              className="bg-gray-800 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-all duration-200 text-sm"
-            >
-              Log out
-            </button>
+            <div>
+              <button
+                onClick={() => setIsEditing(!isEditing)}
+                className="bg-[#7999B6] text-white py-2 px-4 rounded-lg hover:bg-[#5B7083] transition-all duration-200 text-sm mr-2"
+              >
+                {isEditing ? 'View Plan' : 'Edit Plan'}
+              </button>
+              <button
+                onClick={handleLogout}
+                className="bg-[#5B7083] text-white py-2 px-4 rounded-lg hover:bg-[#7999B6] transition-all duration-200 text-sm"
+              >
+                Log out
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Main content area */}
         <div className="flex-1 overflow-auto p-4">
-          {/* Task completion visualizations */}
-          <div className="mb-8">
-            <h3 className="text-xl font-bold mb-4">Task Completion</h3>
-            
-            {/* Progress bar */}
-            <div className="mb-4">
-              <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-                <div 
-                  className="bg-blue-600 h-2.5 rounded-full" 
-                  style={{ width: `${completedPercentage}%` }}
-                ></div>
-              </div>
-              <div className="flex justify-between mt-2">
-                <span>Completed: {completedTasks}</span>
-                <span>Total: {totalTasks}</span>
-              </div>
-            </div>
-
-            {/* Pie chart */}
-            <div className="flex items-center justify-center">
-              <div className="relative w-32 h-32">
-                <svg className="w-full h-full" viewBox="0 0 32 32">
-                  <circle 
-                    className="text-gray-200" 
-                    strokeWidth="4" 
-                    stroke="currentColor" 
-                    fill="transparent" 
-                    r="14" 
-                    cx="16" 
-                    cy="16" 
-                  />
-                  <circle 
-                    className="text-blue-600" 
-                    strokeWidth="4" 
-                    strokeDasharray={`${completedPercentage} 100`}
-                    strokeLinecap="round" 
-                    stroke="currentColor" 
-                    fill="transparent" 
-                    r="14" 
-                    cx="16" 
-                    cy="16" 
-                  />
-                </svg>
-                <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-xl font-bold">
-                  {Math.round(completedPercentage)}%
-                </span>
-              </div>
-            </div>
-          </div>
-          {/* Task input and list */}
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold mb-4">Tasks</h2>
-            <form onSubmit={addTask} className="mb-4">
-              <input
-                type="text"
-                value={newTask}
-                onChange={(e) => setNewTask(e.target.value)}
-                placeholder="Add a new task"
-                className="w-full p-2 border border-gray-300 rounded"
-              />
-              <button type="submit" className="mt-2 bg-blue-500 text-white p-2 rounded hover:bg-blue-600">
-                Add Task
-              </button>
-            </form>
-            <ul>
-              {tasks.map(task => (
-                <li key={task.id} className="flex items-center justify-between mb-2 bg-white p-2 rounded shadow">
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={task.completed}
-                      onChange={() => toggleTask(task.id)}
-                      className="mr-2"
-                    />
-                    <span className={task.completed ? 'line-through' : ''}>{task.text}</span>
+          {isEditing ? (
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-2xl font-bold mb-4 text-[#2C3E50]">Edit Your 5-Year Plan</h2>
+              
+              {/* Display existing goals */}
+              {goals.map((goal) => (
+                <div key={goal.id} className="mb-4 p-3 bg-[#E1E8ED] rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-[#5B7083]">{getYearLabel(goal.year)}</span>
+                    <button onClick={() => deleteGoal(goal.id)} className="text-red-500 hover:text-red-700">Delete</button>
                   </div>
-                  <button
-                    onClick={() => removeTask(task.id)}
-                    className="bg-red-500 text-white px-2 py-1 rounded text-sm hover:bg-red-600"
-                  >
-                    Remove
-                  </button>
-                </li>
+                  <input
+                    type="text"
+                    value={goal.goal}
+                    onChange={(e) => updateGoal(goal.id, e.target.value)}
+                    className="mt-2 w-full p-2 border rounded"
+                  />
+                </div>
               ))}
-            </ul>
-          </div>
 
-          
+              {/* Form to add new goal */}
+              <form onSubmit={addGoal} className="mt-6">
+                <div className="flex flex-col gap-4">
+                  <select
+                    value={newGoal.year}
+                    onChange={(e) => setNewGoal({ ...newGoal, year: parseInt(e.target.value) })}
+                    className="p-2 border rounded"
+                  >
+                    {[1, 2, 3, 4, 5].map(year => (
+                      <option key={year} value={year}>{getYearLabel(year)}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="text"
+                    value={newGoal.goal}
+                    onChange={(e) => setNewGoal({ ...newGoal, goal: e.target.value })}
+                    placeholder="Enter new goal"
+                    className="flex-grow p-2 border rounded"
+                  />
+                  <button 
+                    type="submit" 
+                    className="bg-[#7999B6] text-white px-4 py-2 rounded hover:bg-[#5B7083] disabled:bg-gray-400"
+                    disabled={loading}
+                  >
+                    {loading ? 'Adding...' : 'Add Goal'}
+                  </button>
+                </div>
+              </form>
+              {error && <p className="mt-2 text-red-500">{error}</p>}
+              {successMessage && <p className="mt-2 text-green-500">{successMessage}</p>}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* 5-Year Plan Overview */}
+              <div className="bg-white rounded-lg shadow-md p-4 md:col-span-2">
+                <h2 className="text-xl font-bold mb-3 text-[#2C3E50]">Your 5-Year Plan</h2>
+                <div className="flex flex-wrap">
+                  {goals.map((goal) => (
+                    <div key={goal.id} className="w-full sm:w-1/2 md:w-1/3 lg:w-1/5 p-2">
+                      <div className="bg-[#E1E8ED] rounded-lg p-3 h-full flex flex-col justify-between">
+                        <div className="text-[#5B7083] font-bold mb-2">{getYearLabel(goal.year)}</div>
+                        <div className="text-sm text-[#34495E]">{goal.goal}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Current Focus */}
+              <div className="bg-white rounded-lg shadow-md p-4">
+                <h3 className="text-lg font-bold mb-2 text-[#2C3E50]">Current Focus</h3>
+                <p className="text-[#34495E] text-sm">
+                  {goals.length > 0
+                    ? `Focus on your ${getYearLabel(1)} goal: ${goals.find(g => g.year === 1)?.goal || "Set a goal for this year!"}`
+                    : "Set your goals to see your current focus!"}
+                </p>
+              </div>
+
+              {/* Progress Visualization */}
+              <div className="bg-white rounded-lg shadow-md p-4">
+                <h3 className="text-lg font-bold mb-2 text-[#2C3E50]">Overall Progress</h3>
+                <div className="w-full bg-[#E1E8ED] rounded-full h-2.5 mb-2">
+                  <div 
+                    className="bg-[#7999B6] h-2.5 rounded-full" 
+                    style={{ width: `${(goals.length / 5) * 100}%` }}
+                  ></div>
+                </div>
+                <p className="text-[#34495E] text-sm">
+                  You've set {goals.length} out of 5 year goals!
+                </p>
+              </div>
+
+              {/* Inspirational Quote */}
+              <div className="bg-white rounded-lg shadow-md p-4">
+                <h3 className="text-lg font-bold mb-2 text-[#2C3E50]">Daily Inspiration</h3>
+                <blockquote className="text-[#34495E] text-sm italic">
+                  "The future belongs to those who believe in the beauty of their dreams." - Eleanor Roosevelt
+                </blockquote>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -6,7 +6,8 @@ import { supabase } from '@/lib/supabaseClient';
 import axios from 'axios';
 
 const navigation = [
-  { name: 'Daily', href: '/private/dashboard', current: false },
+  { name: 'Personal', href: '/private/dashboard', current: false },
+  { name: 'Daily', href: '/private/dashboard/tasks', current: false },
   { name: 'Locked In', href: '/private/dashboard/locked_in', current: false },
   { name: 'Mind', href: '/private/dashboard/mental-health', current: true },
 ];
