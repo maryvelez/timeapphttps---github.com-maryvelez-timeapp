@@ -19,13 +19,32 @@ function classNames(...classes: (string | boolean | undefined | null)[]): string
 
 interface Goal {
   id: number;
-  year: number;
+  season: number;
   goal: string;
 }
 
-function getYearLabel(year: number): string {
-  const currentYear = new Date().getFullYear();
-  return (currentYear + year - 1).toString();
+const SEASONS = ['Fall', 'Spring', 'Summer'];
+const START_YEAR = 2024;
+
+function getSeasonYear(seasonNumber: number): { season: string; year: number } {
+  const yearOffset = Math.floor((seasonNumber - 1) / 3);
+  const seasonIndex = (seasonNumber - 1) % 3;
+  
+  return {
+    season: SEASONS[seasonIndex],
+    year: START_YEAR + yearOffset
+  };
+}
+
+function getSeasonNumber(year: number, season: string): number {
+  const yearOffset = year - START_YEAR;
+  const seasonIndex = SEASONS.indexOf(season);
+  return yearOffset * 3 + seasonIndex + 1;
+}
+
+function getSeasonYearLabel(seasonNumber: number): string {
+  const { season, year } = getSeasonYear(seasonNumber);
+  return `${season} ${year}`;
 }
 
 export default function Dashboard() {
@@ -33,7 +52,7 @@ export default function Dashboard() {
   const [isEditing, setIsEditing] = useState(false);
   const router = useRouter();
   const [goals, setGoals] = useState<Goal[]>([]);
-  const [newGoal, setNewGoal] = useState({ year: 1, goal: '' });
+  const [newGoal, setNewGoal] = useState({ season: 1, goal: '' });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -52,7 +71,7 @@ export default function Dashboard() {
         .from('five_year_plan')
         .select('*')
         .eq('user_id', user.id)
-        .order('year', { ascending: true });
+        .order('season', { ascending: true });
 
       if (error) throw error;
       setGoals(data || []);
@@ -79,7 +98,7 @@ export default function Dashboard() {
         .from('five_year_plan')
         .insert([{ 
           user_id: user.id,
-          year: newGoal.year, 
+          season: newGoal.season,
           goal: newGoal.goal.trim() 
         }])
         .select();
@@ -89,7 +108,7 @@ export default function Dashboard() {
       console.log('Goal added successfully:', data);
       setSuccessMessage('Submitted');
       setGoals([...goals, data[0]]);
-      setNewGoal({ year: 1, goal: '' });
+      setNewGoal({ season: 1, goal: '' });
       setError(null);
     } catch (error: any) {
       console.error('Error adding goal:', error.message, error.details, error.hint);
@@ -211,7 +230,7 @@ export default function Dashboard() {
               {goals.map((goal) => (
                 <div key={goal.id} className="mb-4 p-3 bg-[#E1E8ED] rounded-lg">
                   <div className="flex justify-between items-center">
-                    <span className="font-bold text-[#5B7083]">{getYearLabel(goal.year)}</span>
+                    <span className="font-bold text-[#5B7083]">{getSeasonYearLabel(goal.season)}</span>
                     <button onClick={() => deleteGoal(goal.id)} className="text-red-500 hover:text-red-700">Delete</button>
                   </div>
                   <input
@@ -227,12 +246,14 @@ export default function Dashboard() {
               <form onSubmit={addGoal} className="mt-6">
                 <div className="flex flex-col gap-4">
                   <select
-                    value={newGoal.year}
-                    onChange={(e) => setNewGoal({ ...newGoal, year: parseInt(e.target.value) })}
+                    value={newGoal.season}
+                    onChange={(e) => setNewGoal({ ...newGoal, season: parseInt(e.target.value) })}
                     className="p-2 border rounded"
                   >
-                    {[1, 2, 3, 4, 5].map(year => (
-                      <option key={year} value={year}>{getYearLabel(year)}</option>
+                    {[...Array(15)].map((_, index) => (
+                      <option key={index + 1} value={index + 1}>
+                        {getSeasonYearLabel(index + 1)}
+                      </option>
                     ))}
                   </select>
                   <input
@@ -263,7 +284,7 @@ export default function Dashboard() {
                   {goals.map((goal) => (
                     <div key={goal.id} className="w-full sm:w-1/2 md:w-1/3 lg:w-1/5 p-2">
                       <div className="bg-[#E1E8ED] rounded-lg p-3 h-full flex flex-col justify-between">
-                        <div className="text-[#5B7083] font-bold mb-2">{getYearLabel(goal.year)}</div>
+                        <div className="text-[#5B7083] font-bold mb-2">{getSeasonYearLabel(goal.season)}</div>
                         <div className="text-sm text-[#34495E]">{goal.goal}</div>
                       </div>
                     </div>
@@ -276,7 +297,7 @@ export default function Dashboard() {
                 <h3 className="text-lg font-bold mb-2 text-[#2C3E50]">Current Focus</h3>
                 <p className="text-[#34495E] text-sm">
                   {goals.length > 0
-                    ? `Focus on your ${getYearLabel(1)} goal: ${goals.find(g => g.year === 1)?.goal || "Set a goal for this year!"}`
+                    ? `Focus on your ${getSeasonYearLabel(goals[0].season)} goal: ${goals[0].goal || "Set a goal for this season!"}`
                     : "Set your goals to see your current focus!"}
                 </p>
               </div>
@@ -287,11 +308,11 @@ export default function Dashboard() {
                 <div className="w-full bg-[#E1E8ED] rounded-full h-2.5 mb-2">
                   <div 
                     className="bg-[#7999B6] h-2.5 rounded-full" 
-                    style={{ width: `${(goals.length / 5) * 100}%` }}
+                    style={{ width: `${(goals.length / 15) * 100}%` }}
                   ></div>
                 </div>
                 <p className="text-[#34495E] text-sm">
-                  You've set {goals.length} out of 5 year goals!
+                  You've set {goals.length} out of 15 seasonal goals!
                 </p>
               </div>
 
