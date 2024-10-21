@@ -141,7 +141,7 @@ export default function MentalHealthPage() {
               </button>
 
             </form>
-            <p className="  mb-4 text-[#4682B4]">information from ementalhealth.ca</p>
+            <p className="  mb-4 text-[#4682B4]">information from ___.ca</p>
 
           </div>
         </div>
