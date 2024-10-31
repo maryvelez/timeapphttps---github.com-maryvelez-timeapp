@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import axios from 'axios';
+import { Message } from '@/types/mental-health'; // Add this new import
 
 const navigation = [
   { name: 'Personal', href: '/private/dashboard', current: false },
@@ -14,11 +15,6 @@ const navigation = [
 
 function classNames(...classes: (string | boolean | undefined | null)[]): string {
   return classes.filter(Boolean).join(' ');
-}
-
-interface Message {
-  text: string;
-  isUser: boolean;
 }
 
 export default function MentalHealthPage() {
@@ -41,23 +37,60 @@ export default function MentalHealthPage() {
     e.preventDefault();
     if (!input.trim()) return;
 
+    // Add user message to chat
     const userMessage: Message = { text: input, isUser: true };
     setMessages(prevMessages => [...prevMessages, userMessage]);
     setInput('');
     setIsLoading(true);
 
     try {
-      const response = await axios.post('/api/mental-health-chat', { message: input });
-      const botMessage: Message = { text: response.data.reply, isUser: false };
+      // Send message and chat history to API
+      const response = await axios.post('/api/mental-health-chat', {
+        message: input,
+        chatHistory: messages // Include chat history for context
+      });
+
+      // Extract source from response if available
+      const responseText = response.data.reply;
+      const source = response.data.source || 'source not available';
+
+      // Add bot message with source if available
+      const botMessage: Message = {
+        text: responseText,
+        isUser: false,
+        source: source // Optional: Add source to Message type if you want to display it
+      };
+      
       setMessages(prevMessages => [...prevMessages, botMessage]);
     } catch (error) {
       console.error('Error fetching reply:', error);
-      const errorMessage: Message = { text: 'Sorry, I encountered an error. Please try again.', isUser: false };
+      const errorMessage: Message = {
+        text: 'Sorry, I encountered an error. Please try again.',
+        isUser: false
+      };
       setMessages(prevMessages => [...prevMessages, errorMessage]);
     }
 
     setIsLoading(false);
   };
+
+  // Render the message with source if available
+  const renderMessage = (message: Message, index: number) => (
+    <div key={index} className={`mb-2 ${message.isUser ? 'text-right' : 'text-left'}`}>
+      <span 
+        className={`inline-block p-2 rounded-lg ${
+          message.isUser ? 'bg-[#E6E6FA] text-[#4B0082]' : 'bg-[#F0FFF0] text-[#2E8B57]'
+        }`}
+      >
+        {message.text}
+        {!message.isUser && message.source && (
+          <div className="text-xs mt-1 text-[#4682B4]">
+            Source: {message.source}
+          </div>
+        )}
+      </span>
+    </div>
+  );
 
   return (
     <div className="flex h-screen bg-[#E6F3FF]">
@@ -110,18 +143,9 @@ export default function MentalHealthPage() {
         <div className="flex-1 overflow-auto p-4">
           <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-xl p-6">
             <h1 className="text-2xl font-bold mb-4 text-[#4682B4]">Mind and me</h1>
-            <p className="  mb-4 text-[#4682B4]">talk about your thoughts or bounce back ideas</p>
+            <p className="mb-4 text-[#4682B4]">talk about your thoughts or bounce back ideas</p>
             <div className="mb-4 h-96 overflow-y-auto border border-[#B0E0E6] rounded-lg p-4">
-              {messages.map((message, index) => (
-                <div key={index} className={`mb-2 ${message.isUser ? 'text-right' : 'text-left'}`}>
-                  <span className={`inline-block p-2 rounded-lg ${message.isUser ? 'bg-[#E6E6FA] text-[#4B0082]' : 'bg-[#F0FFF0] text-[#2E8B57]'}`}>
-                    {message.text}
-                    {!message.isUser && message.text.includes("ementalhealth.ca") && (
-                      <div className="text-xs mt-1 text-[#4682B4]">Source: ementalhealth.ca</div>
-                    )}
-                  </span>
-                </div>
-              ))}
+              {messages.map((message, index) => renderMessage(message, index))}
               {isLoading && <div className="text-center text-[#4682B4]">Thinking...</div>}
             </div>
             <form onSubmit={handleSubmit} className="flex">
@@ -139,10 +163,8 @@ export default function MentalHealthPage() {
               >
                 Send
               </button>
-
             </form>
-            <p className="  mb-4 text-[#4682B4]">information from ___.ca</p>
-
+            <p className="mb-4 text-[#4682B4]">information from source</p>
           </div>
         </div>
       </div>
